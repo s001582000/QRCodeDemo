@@ -9,10 +9,6 @@
 import UIKit
 import AVFoundation
 
-protocol QRGetterDelegate{
-    func qrGetterOnMessage(message:String,type:CodeType)
-}
-
 enum CodeType : Int {
     case UPCECode = 0,
     Code39Code,
@@ -28,12 +24,14 @@ enum CodeType : Int {
 }
 
 class QRGetter: UIView, AVCaptureMetadataOutputObjectsDelegate {
-    var delegate:QRGetterDelegate!
+    private typealias closeBlock = (_ message:String,_ type:CodeType) -> Void
+    private var mBlock:closeBlock?
     private var mCaptureSession:AVCaptureSession!
     private var mPreviewLayer:AVCaptureVideoPreviewLayer!
     private var mQRCodeFrameView:UIView!
     private var mScopeView:UIView!
     private var bScopeView = false
+    
     private let METADATATYPE = [
         AVMetadataObjectTypeUPCECode,
         AVMetadataObjectTypeCode39Code,
@@ -150,12 +148,14 @@ class QRGetter: UIView, AVCaptureMetadataOutputObjectsDelegate {
         return codeType
     }
     
-    func start(){
+    func start(completion:@escaping (String,CodeType)->Void){
         if !mCaptureSession.isRunning{
             mCaptureSession.startRunning()
+            mBlock = completion
             if bScopeView{
                 self.addSubview(mScopeView!)
                 self.bringSubview(toFront: mScopeView!)
+                
             }
         }
     }
@@ -189,7 +189,7 @@ class QRGetter: UIView, AVCaptureMetadataOutputObjectsDelegate {
         if metadataObjects == nil || metadataObjects.count == 0 {
             mQRCodeFrameView.frame = CGRect.zero
             
-            delegate?.qrGetterOnMessage(message: "not has message", type: getCodeType(type: ""))
+            mBlock?("not has message",getCodeType(type: ""))
             return
         }
         
@@ -204,11 +204,12 @@ class QRGetter: UIView, AVCaptureMetadataOutputObjectsDelegate {
                     
                     if bScopeView{
                         if mScopeView.frame.contains(barCodeObject.bounds){
-                            delegate?.qrGetterOnMessage(message: str!, type: getCodeType(type: type))
+                            
+                            mBlock?(str!,getCodeType(type: type))
                             mQRCodeFrameView.frame = barCodeObject.bounds
                         }
                     }else{
-                        delegate?.qrGetterOnMessage(message: str!, type: getCodeType(type: type))
+                        mBlock?(str!,getCodeType(type: type))
                         mQRCodeFrameView.frame = barCodeObject.bounds
                     }
                 }

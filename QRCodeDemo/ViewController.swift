@@ -8,7 +8,7 @@
 
 import UIKit
 
-class ViewController: UIViewController,QRGetterDelegate {
+class ViewController: UIViewController {
     var qrCodeGetter:QRGetter!
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -21,18 +21,17 @@ class ViewController: UIViewController,QRGetterDelegate {
     @IBAction func btnOnClick(_ sender: UIButton) {
         if qrCodeGetter == nil{
             qrCodeGetter = QRGetter(frame: self.view.bounds)
-            qrCodeGetter.delegate = self
+            qrCodeGetter.setScopeFrame(size: CGSize(width: 400, height: 400))
             self.view.addSubview(qrCodeGetter)
         }
         
-        qrCodeGetter.start()
+        qrCodeGetter.start { (message, type) in
+            self.qrCodeGetter.stop()
+            self.qrCodeGetter.removeFromSuperview()
+            self.qrCodeGetter = nil
+        }
     }
 
-    func qrGetterOnMessage(message: String, type: CodeType) {
-        qrCodeGetter.stop()
-        qrCodeGetter.removeFromSuperview()
-        qrCodeGetter = nil
-        print("message=\(message),type=\(type.hashValue)")
-    }
+    
 
 }
